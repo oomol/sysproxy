@@ -34,7 +34,7 @@ func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo, error) {
 		return nil, nil, err
 	}
 
-	proxyUrl := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.AutoConfigURL))[:])
+	proxyUrl := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.Proxy))[:])
 	proxyBypass := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.ProxyBypass))[:])
 	proxyHost := strings.Split(proxyUrl, ":")[0]
 	proxyPort, err := strconv.ParseUint(strings.Split(proxyUrl, ":")[1], 10, 32)
