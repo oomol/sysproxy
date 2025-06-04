@@ -64,15 +64,16 @@ ProxyInfo getHttpsProxyInfo(CFDictionaryRef settings) {
 */
 import "C"
 import (
+	"fmt"
 	"unsafe"
 )
 
-func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo) {
+func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo, error) {
 	httpProxyInfo := &HttpProxyInfo{}
 
 	settings := C.SCDynamicStoreCopyProxies(C.SCDynamicStoreRef(unsafe.Pointer(nil)))
 	if unsafe.Pointer(settings) == nil {
-		return nil, nil
+		return nil, nil, fmt.Errorf("cannot get proxy info")
 	}
 
 	defer C.CFRelease(C.CFTypeRef(settings))
@@ -90,5 +91,5 @@ func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo) {
 		httpsProxyInfo.Port = uint16(httpsInfo.port)
 	}
 
-	return httpProxyInfo, httpsProxyInfo
+	return httpProxyInfo, httpsProxyInfo, nil
 }
