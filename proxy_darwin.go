@@ -67,19 +67,6 @@ import (
 	"unsafe"
 )
 
-type HttpsProxyInfo struct {
-	ProxyInfo
-}
-
-type HttpProxyInfo struct {
-	ProxyInfo
-}
-
-type ProxyInfo struct {
-	host string
-	port uint16
-}
-
 func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo) {
 	httpProxyInfo := &HttpProxyInfo{}
 
@@ -92,16 +79,15 @@ func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo) {
 
 	httpInfo := C.getHttpProxyInfo(settings)
 	if httpInfo.enabled != 0 {
-		httpProxyInfo.host = C.GoString(&httpInfo.host[0])
-		httpProxyInfo.port = uint16(httpInfo.port)
+		httpProxyInfo.Host = C.GoString(&httpInfo.host[0])
+		httpProxyInfo.Port = uint16(httpInfo.port)
 	}
 
 	httpsProxyInfo := &HttpsProxyInfo{}
 	httpsInfo := C.getHttpsProxyInfo(settings)
 	if httpsInfo.enabled != 0 {
-		httpsProxyInfo.host = C.GoString(&httpsInfo.host[0])
-		httpsProxyInfo.port = uint16(httpsInfo.port)
-
+		httpsProxyInfo.Host = C.GoString(&httpsInfo.host[0])
+		httpsProxyInfo.Port = uint16(httpsInfo.port)
 	}
 
 	return httpProxyInfo, httpsProxyInfo

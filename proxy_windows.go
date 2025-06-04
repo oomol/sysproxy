@@ -7,12 +7,6 @@ import (
 	"unsafe"
 )
 
-type WinHttpProxyInfo struct {
-	Host   string
-	Port   uint32
-	Bypass string
-}
-
 type winHttpCurrentUserIeProxyConfig struct {
 	AutoDetect    int32
 	AutoConfigURL *uint16
@@ -34,23 +28,35 @@ func getIEProxyConfig() (*winHttpCurrentUserIeProxyConfig, error) {
 	return &config, nil
 }
 
-func GetProxyInfo() (*WinHttpProxyInfo, error) {
+func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo, error) {
 	config, err := getIEProxyConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	proxyUrl := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.AutoConfigURL))[:])
-	proxyBaypass := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.ProxyBypass))[:])
+	proxyBypass := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.ProxyBypass))[:])
 	proxyHost := strings.Split(proxyUrl, ":")[0]
 	proxyPort, err := strconv.ParseUint(strings.Split(proxyUrl, ":")[1], 10, 32)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &WinHttpProxyInfo{
-		Host:   proxyHost,
-		Port:   uint32(proxyPort),
-		Bypass: proxyBaypass,
-	}, nil
+	httpProxyInfo := &HttpProxyInfo{
+		ProxyInfo: ProxyInfo{
+			Host:   proxyHost,
+			Port:   uint16(proxyPort),
+			Bypass: proxyBypass,
+		},
+	}
+
+	httpsProxyInfo := &HttpsProxyInfo{
+		ProxyInfo: ProxyInfo{
+			Host:   proxyHost,
+			Port:   uint16(proxyPort),
+			Bypass: proxyBypass,
+		},
+	}
+
+	return httpProxyInfo, httpsProxyInfo, nil
 }
