@@ -1,3 +1,3 @@
-module systeminfo
+module sysproxy
 
 go 1.24

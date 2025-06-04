@@ -1,4 +1,4 @@
-package systeminfo
+package sysproxy
 
 /*
 #cgo CFLAGS: -mmacosx-version-min=10.10
