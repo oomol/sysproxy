@@ -17,5 +17,4 @@ func TestGetProxyInfo(t *testing.T) {
 		t.Logf("HTTPS Proxy Host: %v", httpsInfo.Host)
 		t.Logf("HTTPS Proxy Port: %v", httpsInfo.Port)
 	}
-
 }
