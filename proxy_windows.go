@@ -1,62 +1,79 @@
-package systeminfo
+package sysproxy
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
-type winHttpCurrentUserIeProxyConfig struct {
-	AutoDetect    int32
-	AutoConfigURL *uint16
-	Proxy         *uint16
-	ProxyBypass   *uint16
+var (
+	procGetProxy *syscall.LazyProc
+)
+
+func init() {
+	procGetProxy = syscall.NewLazyDLL("winhttp.dll").NewProc("WinHttpGetIEProxyConfigForCurrentUser")
 }
 
-func getIEProxyConfig() (*winHttpCurrentUserIeProxyConfig, error) {
-	winhttp := syscall.NewLazyDLL("winhttp.dll")
-	procGetProxy := winhttp.NewProc("WinHttpGetIEProxyConfigForCurrentUser")
+type rawProxyConfig struct {
+	autoDetect    bool
+	autoConfigUrl *uint16
+	proxy         *uint16
+	proxyBypass   *uint16
+}
 
-	var config winHttpCurrentUserIeProxyConfig
-
-	r1, _, err := procGetProxy.Call(uintptr(unsafe.Pointer(&config)))
+func GetHttpProxy() (*Info, error) {
+	var rawConfig rawProxyConfig
+	r1, _, err := procGetProxy.Call(uintptr(unsafe.Pointer(&rawConfig)))
 	if r1 == 0 {
+		return nil, fmt.Errorf("WinHttpGetIEProxyConfigForCurrentUser error: %v", err)
+	}
+	proxyURL := convertUTF16Ptr(rawConfig.proxy)
+
+	if proxyURL == "" {
+		return nil, nil
+	}
+
+	host := strings.Split(proxyURL, ":")[0]
+	port, err := strconv.ParseUint(strings.Split(proxyURL, ":")[1], 10, 32)
+	if err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	info := &Info{
+		Host: host,
+		Port: uint16(port),
+	}
+
+	return info, nil
 }
 
-func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo, error) {
-	config, err := getIEProxyConfig()
+func GetHttpsProxy() (*Info, error) {
+	return nil, nil
+}
+
+// GetAll Get Windows proxy information. Windows proxy settings only support http proxy.
+func GetAll() (*Info, *Info, error) {
+	httpProxyInfo, err := GetHttpProxy()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	proxyUrl := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.Proxy))[:])
-	proxyBypass := syscall.UTF16ToString((*[1 << 16]uint16)(unsafe.Pointer(config.ProxyBypass))[:])
-	proxyHost := strings.Split(proxyUrl, ":")[0]
-	proxyPort, err := strconv.ParseUint(strings.Split(proxyUrl, ":")[1], 10, 32)
+	httpsProxyInfo, err := GetHttpsProxy()
 	if err != nil {
 		return nil, nil, err
-	}
-
-	httpProxyInfo := &HttpProxyInfo{
-		ProxyInfo: ProxyInfo{
-			Host:   proxyHost,
-			Port:   uint16(proxyPort),
-			Bypass: proxyBypass,
-		},
-	}
-
-	httpsProxyInfo := &HttpsProxyInfo{
-		ProxyInfo: ProxyInfo{
-			Host:   proxyHost,
-			Port:   uint16(proxyPort),
-			Bypass: proxyBypass,
-		},
 	}
 
 	return httpProxyInfo, httpsProxyInfo, nil
+}
+
+// convertUTF16Ptr safely converts a pointer to a UTF16 string.
+func convertUTF16Ptr(ptr *uint16) string {
+	if ptr == nil {
+		return ""
+	}
+	return windows.UTF16PtrToString(ptr)
 }
