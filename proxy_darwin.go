@@ -14,7 +14,7 @@ typedef struct {
     int port;
 } ProxyInfo;
 
-ProxyInfo getHttpProxyInfo(CFDictionaryRef settings) {
+ProxyInfo getHTTP(CFDictionaryRef settings) {
     ProxyInfo info = {0};
     if (!settings) return info;
 
@@ -38,7 +38,7 @@ ProxyInfo getHttpProxyInfo(CFDictionaryRef settings) {
     return info;
 }
 
-ProxyInfo getHttpsProxyInfo(CFDictionaryRef settings) {
+ProxyInfo getHTTPS(CFDictionaryRef settings) {
     ProxyInfo info = {0};
     if (!settings) return info;
 
@@ -65,23 +65,48 @@ ProxyInfo getHttpsProxyInfo(CFDictionaryRef settings) {
 import "C"
 import (
 	"fmt"
+	"io"
 	"unsafe"
 )
 
-func GetAll() (*Info, *Info, error) {
-	settings := C.SCDynamicStoreCopyProxies(C.SCDynamicStoreRef(unsafe.Pointer(nil)))
-	if unsafe.Pointer(settings) == nil {
-		return nil, nil, fmt.Errorf("cannot get proxy info")
+type setting struct {
+	ref C.CFDictionaryRef
+
+	io.Closer
+}
+
+func (s *setting) Close() error {
+	if unsafe.Pointer(s.ref) != nil {
+		C.CFRelease(C.CFTypeRef(s.ref))
 	}
 
-	defer C.CFRelease(C.CFTypeRef(settings))
+	return nil
+}
 
-	httpProxy, err := GetHttpProxy(C.CFDictionaryRef(settings))
+func createSetting() (*setting, error) {
+	setRef := C.SCDynamicStoreCopyProxies(C.SCDynamicStoreRef(unsafe.Pointer(nil)))
+	if unsafe.Pointer(setRef) == nil {
+		return nil, fmt.Errorf("failed to get system proxy settings")
+	}
+
+	return &setting{
+		ref: C.CFDictionaryRef(setRef),
+	}, nil
+}
+
+func GetAll() (*Info, *Info, error) {
+	s, err := createSetting()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer s.Close()
+
+	httpProxy, err := getHTTP(s.ref)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	httpsProxy, err := GetHttpsProxy(C.CFDictionaryRef(settings))
+	httpsProxy, err := getHTTPS(s.ref)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,30 +114,46 @@ func GetAll() (*Info, *Info, error) {
 	return httpProxy, httpsProxy, nil
 }
 
-func GetHttpProxy(settings C.CFDictionaryRef) (*Info, error) {
-	info := &Info{}
-	httpInfo := C.getHttpProxyInfo(settings)
-
-	if httpInfo.enabled == 0 {
+func getHTTP(settings C.CFDictionaryRef) (*Info, error) {
+	raw := C.getHTTP(settings)
+	if raw.enabled == 0 {
 		return nil, nil
 	}
 
-	info.Host = C.GoString(&httpInfo.host[0])
-	info.Port = uint16(httpInfo.port)
-
-	return info, nil
+	return &Info{
+		Host: C.GoString(&raw.host[0]),
+		Port: uint16(raw.port),
+	}, nil
 }
 
-func GetHttpsProxy(settings C.CFDictionaryRef) (*Info, error) {
-	info := &Info{}
-	httpsInfo := C.getHttpsProxyInfo(settings)
+func GetHTTP() (*Info, error) {
+	s, err := createSetting()
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
 
-	if httpsInfo.enabled == 0 {
+	return getHTTP(s.ref)
+}
+
+func getHTTPS(settings C.CFDictionaryRef) (*Info, error) {
+	raw := C.getHTTPS(settings)
+	if raw.enabled == 0 {
 		return nil, nil
 	}
 
-	info.Host = C.GoString(&httpsInfo.host[0])
-	info.Port = uint16(httpsInfo.port)
+	return &Info{
+		Host: C.GoString(&raw.host[0]),
+		Port: uint16(raw.port),
+	}, nil
+}
 
-	return info, nil
+func GetHTTPS() (*Info, error) {
+	s, err := createSetting()
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
+
+	return getHTTPS(s.ref)
 }
