@@ -57,12 +57,12 @@ func GetHttpsProxy() (*ProxyInfo, error) {
 
 // GetAll Get Windows proxy information. Windows proxy settings only support http proxy.
 func GetAll() (*ProxyInfo, *ProxyInfo, error) {
-	httpProxyInfo, err := getHttpProxy()
+	httpProxyInfo, err := GetHttpProxy()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	httpsProxyInfo, err := getHttpsProxy()
+	httpsProxyInfo, err := GetHttpsProxy()
 	if err != nil {
 		return nil, nil, err
 	}
