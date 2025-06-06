@@ -25,7 +25,7 @@ type rawProxyConfig struct {
 	proxyBypass   *uint16
 }
 
-func GetHttpProxy() (*ProxyInfo, error) {
+func GetHttpProxy() (*Info, error) {
 	var rawConfig rawProxyConfig
 	r1, _, err := procGetProxy.Call(uintptr(unsafe.Pointer(&rawConfig)))
 	if r1 == 0 {
@@ -43,7 +43,7 @@ func GetHttpProxy() (*ProxyInfo, error) {
 		return nil, err
 	}
 
-	info := &ProxyInfo{
+	info := &Info{
 		Host: host,
 		Port: uint16(port),
 	}
@@ -51,12 +51,12 @@ func GetHttpProxy() (*ProxyInfo, error) {
 	return info, nil
 }
 
-func GetHttpsProxy() (*ProxyInfo, error) {
+func GetHttpsProxy() (*Info, error) {
 	return nil, nil
 }
 
 // GetAll Get Windows proxy information. Windows proxy settings only support http proxy.
-func GetAll() (*ProxyInfo, *ProxyInfo, error) {
+func GetAll() (*Info, *Info, error) {
 	httpProxyInfo, err := GetHttpProxy()
 	if err != nil {
 		return nil, nil, err
