@@ -68,7 +68,7 @@ import (
 	"unsafe"
 )
 
-func GetInfo() (*ProxyInfo, *ProxyInfo, error) {
+func GetAll() (*ProxyInfo, *ProxyInfo, error) {
 	settings := C.SCDynamicStoreCopyProxies(C.SCDynamicStoreRef(unsafe.Pointer(nil)))
 	if unsafe.Pointer(settings) == nil {
 		return nil, nil, fmt.Errorf("cannot get proxy info, get SCDynamicStoreCopyProxies error")
@@ -93,10 +93,12 @@ func GetHttpProxy(settings C.CFDictionaryRef) (*ProxyInfo, error) {
 	info := &ProxyInfo{}
 	httpInfo := C.getHttpProxyInfo(settings)
 
-	if httpInfo.enabled != 0 {
-		info.Host = C.GoString(&httpInfo.host[0])
-		info.Port = uint16(httpInfo.port)
+	if httpInfo.enabled == 0 {
+		return nil, nil
 	}
+
+	info.Host = C.GoString(&httpInfo.host[0])
+	info.Port = uint16(httpInfo.port)
 
 	return info, nil
 }
@@ -104,10 +106,13 @@ func GetHttpProxy(settings C.CFDictionaryRef) (*ProxyInfo, error) {
 func GetHttpsProxy(settings C.CFDictionaryRef) (*ProxyInfo, error) {
 	info := &ProxyInfo{}
 	httpsInfo := C.getHttpsProxyInfo(settings)
-	if httpsInfo.enabled != 0 {
-		info.Host = C.GoString(&httpsInfo.host[0])
-		info.Port = uint16(httpsInfo.port)
+
+	if httpsInfo.enabled == 0 {
+		return nil, nil
 	}
+
+	info.Host = C.GoString(&httpsInfo.host[0])
+	info.Port = uint16(httpsInfo.port)
 
 	return info, nil
 }

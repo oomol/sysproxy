@@ -2,11 +2,12 @@ package sysproxy
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows"
 	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
@@ -24,7 +25,7 @@ type rawProxyConfig struct {
 	proxyBypass   *uint16
 }
 
-func getHttpProxy() (*ProxyInfo, error) {
+func GetHttpProxy() (*ProxyInfo, error) {
 	var rawConfig rawProxyConfig
 	r1, _, err := procGetProxy.Call(uintptr(unsafe.Pointer(&rawConfig)))
 	if r1 == 0 {
@@ -50,7 +51,7 @@ func getHttpProxy() (*ProxyInfo, error) {
 	return info, nil
 }
 
-func getHttpsProxy() (*ProxyInfo, error) {
+func GetHttpsProxy() (*ProxyInfo, error) {
 	return nil, nil
 }
 
