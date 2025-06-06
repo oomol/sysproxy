@@ -8,12 +8,12 @@ func TestGetProxyInfo(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	if httpInfo != nil {
+	if httpInfo.Host != "" {
 		t.Logf("HTTP Proxy Host: %v", httpInfo.Host)
 		t.Logf("HTTP Proxy Port: %v", httpInfo.Port)
 	}
 
-	if httpsInfo != nil {
+	if httpInfo.Host != "" {
 		t.Logf("HTTPS Proxy Host: %v", httpsInfo.Host)
 		t.Logf("HTTPS Proxy Port: %v", httpsInfo.Port)
 	}

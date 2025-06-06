@@ -64,31 +64,50 @@ ProxyInfo getHttpsProxyInfo(CFDictionaryRef settings) {
 */
 import "C"
 import (
+	"fmt"
 	"unsafe"
 )
 
-func GetProxyInfo() (*HttpProxyInfo, *HttpsProxyInfo) {
-	httpProxyInfo := &HttpProxyInfo{}
-
+func GetInfo() (*ProxyInfo, *ProxyInfo, error) {
 	settings := C.SCDynamicStoreCopyProxies(C.SCDynamicStoreRef(unsafe.Pointer(nil)))
 	if unsafe.Pointer(settings) == nil {
-		return nil, nil
+		return nil, nil, fmt.Errorf("cannot get proxy info, get SCDynamicStoreCopyProxies error")
 	}
 
 	defer C.CFRelease(C.CFTypeRef(settings))
 
-	httpInfo := C.getHttpProxyInfo(settings)
-	if httpInfo.enabled != 0 {
-		httpProxyInfo.Host = C.GoString(&httpInfo.host[0])
-		httpProxyInfo.Port = uint16(httpInfo.port)
+	httpProxy, err := GetHttpProxy(C.CFDictionaryRef(settings))
+	if err != nil {
+		return nil, nil, err
 	}
 
-	httpsProxyInfo := &HttpsProxyInfo{}
+	httpsProxy, err := GetHttpsProxy(C.CFDictionaryRef(settings))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return httpProxy, httpsProxy, nil
+}
+
+func GetHttpProxy(settings C.CFDictionaryRef) (*ProxyInfo, error) {
+	info := &ProxyInfo{}
+	httpInfo := C.getHttpProxyInfo(settings)
+
+	if httpInfo.enabled != 0 {
+		info.Host = C.GoString(&httpInfo.host[0])
+		info.Port = uint16(httpInfo.port)
+	}
+
+	return info, nil
+}
+
+func GetHttpsProxy(settings C.CFDictionaryRef) (*ProxyInfo, error) {
+	info := &ProxyInfo{}
 	httpsInfo := C.getHttpsProxyInfo(settings)
 	if httpsInfo.enabled != 0 {
-		httpsProxyInfo.Host = C.GoString(&httpsInfo.host[0])
-		httpsProxyInfo.Port = uint16(httpsInfo.port)
+		info.Host = C.GoString(&httpsInfo.host[0])
+		info.Port = uint16(httpsInfo.port)
 	}
 
-	return httpProxyInfo, httpsProxyInfo
+	return info, nil
 }
