@@ -1,6 +1,6 @@
 package sysproxy
 
-type ProxyInfo struct {
+type Info struct {
 	Host string
 	Port uint16
 }
