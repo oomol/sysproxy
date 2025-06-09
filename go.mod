@@ -1,4 +1,4 @@
-module sysproxy
+module github.com/oomol-lab/sysproxy
 
 go 1.24
 

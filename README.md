@@ -1,38 +1,37 @@
-# sysproxy is a Golang library for retrieving system proxy settings
+# sysproxy
 
-### Supported platforms and proxy type:
-- windows (http)
-- MacOS (http/https)
+A Golang library for retrieving system proxy settings
 
-### Retrieve the system HTTP proxy:
+### Supported platforms and proxy types:
+
+- Windows (HTTP)
+- Darwin (HTTP/HTTPS)
+
+### Get HTTP/HTTPS proxies:
+
 ```go
-httpInfo, err := GetHTTP()
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v:", err)
-	}
+package main
 
+import (
+	"fmt"
+
+	"github.com/oomol-lab/sysproxy"
+)
+
+func main() {
+	httpInfo, _ := sysproxy.GetHTTP()
 	if httpInfo != nil {
-		fmt.Printf("HTTP Proxy Host: %v\n", httpInfo.Host)
-		fmt.Printf("HTTP Proxy Port: %v\n", httpInfo.Port)
-	}
-```
-
-### Retrieve the system HTTPS proxy:
-```go
-	httpsInfo, err := GetHTTPS()
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v:", err)
+		fmt.Printf("http proxy host: %s, port: %d \n", httpInfo.Host, httpInfo.Port)
 	}
 
+	// Since Windows does not support setting an HTTPS proxy
+	// GetHTTPS will always return nil with no error on the Windows platform
+	httpsInfo, _ := sysproxy.GetHTTPS()
 	if httpsInfo != nil {
-		fmt.Printf("HTTPS Proxy Host: %v\n", httpsInfo.Host)
-		fmt.Printf("HTTPS Proxy Port: %v\n", httpsInfo.Port)
+		fmt.Printf("https proxy host: %s, port: %d \n", httpsInfo.Host, httpsInfo.Port)
 	}
-```
 
-You can also use `GetAll` to efficiently retrieve all HTTP/HTTPS proxy settings.
-```go
-    httpInfo, httpsInfo, err := GetAll()
+	// You can also using sysproxy.GetAll() get all proxy settings
+	// httpInfo, httpsInfo, _ := sysproxy.GetAll()
+}
 ```
-
-**Note:** Only HTTP proxy supported on the Windows platform, to ensure accurate results, please use `GetHTTP`, the `GetHTTPS` function just return nil with no error.
